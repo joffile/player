@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Мой плеер</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
 <style>
 :root{--fg:#fff;--mut:#7a7a7a;--line:#222;--card:#0c0c0c}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -353,6 +355,6 @@ if(navigator.mediaSession){
 /* --- start --- */
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=ic(el.dataset.icon));
 render();
-</script>
+</script><script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
 </body>
 </html>
