@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Мой плеер</title>
+<style>
+:root{--fg:#fff;--mut:#7a7a7a;--line:#222;--card:#0c0c0c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:#000;color:var(--fg);font-family:system-ui,-apple-system,Roboto,"Segoe UI",sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit}
+#bg{position:fixed;inset:0;background:50%/cover no-repeat;filter:blur(40px) brightness(.3);transform:scale(1.25);opacity:0;transition:opacity .8s;z-index:0}
+#bg.on{opacity:1}
+.app{position:relative;z-index:1;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.top h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.3px;text-align:center}
+.top small{display:block;margin-top:3px;text-align:center;font-size:12px;color:var(--mut)}
+.btn{width:44px;height:44px;flex:none;display:grid;place-items:center;padding:0;border-radius:16px;border:1px solid var(--line);background:var(--card);cursor:pointer;transition:transform .12s,border-color .2s}
+.btn:active,.play:active,.chip:active{transform:scale(.92)}
+.btn.on,.chip.on{border-color:#fff}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cover{position:relative;width:min(82vw,44vh,360px);aspect-ratio:1;margin:14px auto 0;border-radius:30px;border:1px solid var(--line);background:#0c0c0c 50%/cover no-repeat;display:grid;place-items:center;overflow:hidden;cursor:pointer;flex:none}
+.cover.img .note{display:none}
+.cover.empty .note{opacity:.35}
+.note{width:96px;height:96px;color:#fff}
+.note .ic{width:96px;height:96px;stroke-width:1.2}
+.cover canvas{position:absolute;left:0;bottom:0;width:100%;height:38%}
+.meta{text-align:center;margin-top:18px}
+.title{font-size:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{margin-top:4px;font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seek{margin-top:16px}
+.times{display:flex;justify-content:space-between;margin-top:2px;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;margin:0;background:none;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(#fff,#fff) 0/var(--p,0%) 100% no-repeat,#2a2a2a}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#fff}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:#2a2a2a}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:#fff}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
+.ctrl{display:flex;align-items:center;justify-content:space-between;margin:14px 0 18px}
+.play{width:80px;height:80px;display:grid;place-items:center;padding:0;border:0;border-radius:28px;background:#fff;color:#000;cursor:pointer;transition:transform .12s}
+.play .ic{width:30px;height:30px;fill:currentColor;stroke-width:1.6}
+.row2{display:flex;align-items:center;gap:10px}
+.chip{height:44px;min-width:44px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:16px;border:1px solid var(--line);background:var(--card);font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums;transition:transform .12s,border-color .2s}
+.chip .ic{width:18px;height:18px}
+.vol{flex:1;min-width:0}
+.dim{position:fixed;inset:0;z-index:4;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .3s}
+.dim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:5;max-width:480px;margin:0 auto;height:70vh;display:flex;flex-direction:column;padding:14px 14px calc(14px + env(safe-area-inset-bottom));background:#0a0a0a;border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.sheet.open{transform:none}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:0 4px 12px}
+.sh b{font-size:16px}
+.sh div{display:flex;gap:8px}
+#list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.it{display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 8px 8px 14px;border:1px solid var(--line);border-radius:18px;background:var(--card);cursor:pointer}
+.it.cur{border-color:#fff}
+.n{width:24px;flex:none;text-align:center;font-size:13px;color:var(--mut)}
+.it.cur .n{color:#fff}
+.nm{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fv{width:16px;height:16px;color:#fff;flex:none}
+.rm{width:36px;height:36px;flex:none;display:grid;place-items:center;padding:0;border:0;border-radius:12px;background:none;color:var(--mut);cursor:pointer}
+.rm .ic{width:18px;height:18px}
+.hint{margin:40px 10px;text-align:center;font-size:14px;line-height:1.5;color:var(--mut)}
+#toast{position:fixed;z-index:9;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translate(-50%,-160%);max-width:88vw;padding:10px 16px;border-radius:14px;background:#fff;color:#000;font-size:14px;transition:transform .3s;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<div class="app">
+  <div class="top">
+    <button class="btn" id="add" data-icon="plus" aria-label="Добавить музыку"></button>
+    <div><h1>Мой плеер</h1><small id="count">Пусто</small></div>
+    <button class="btn" id="pic" data-icon="image" aria-label="Выбрать фон"></button>
+  </div>
+
+  <div class="cover empty" id="cover">
+    <div class="note" id="note" data-icon="music"></div>
+    <canvas id="viz"></canvas>
+  </div>
+
+  <div class="meta">
+    <div class="title" id="title">Выберите трек</div>
+    <div class="artist" id="artist">Нажмите + и выберите музыку</div>
+  </div>
+
+  <div class="seek">
+    <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Перемотка">
+    <div class="times"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="btn" id="shf" data-icon="shuffle" aria-label="Перемешать"></button>
+    <button class="btn" id="prev" data-icon="prev" aria-label="Назад"></button>
+    <button class="play" id="play" aria-label="Играть"></button>
+    <button class="btn" id="next" data-icon="next" aria-label="Далее"></button>
+    <button class="btn" id="rep" aria-label="Повтор"></button>
+  </div>
+
+  <div class="row2">
+    <button class="chip" id="spd">1×</button>
+    <button class="chip" id="tmr" aria-label="Таймер сна"></button>
+    <input type="range" class="vol" id="vol" min="0" max="100" value="80" aria-label="Громкость">
+    <button class="btn" id="fav" data-icon="heart" aria-label="Избранное"></button>
+    <button class="btn" id="lst" data-icon="list" aria-label="Плейлист"></button>
+  </div>
+</div>
+
+<div class="dim" id="dim"></div>
+<div class="sheet" id="sheet">
+  <div class="sh"><b>Плейлист</b>
+    <div>
+      <button class="btn" id="clr" data-icon="trash" aria-label="Очистить"></button>
+      <button class="btn" id="close" data-icon="down" aria-label="Закрыть"></button>
+    </div>
+  </div>
+  <div id="list"></div>
+</div>
+
+<input type="file" id="file" accept="audio/*" multiple hidden>
+<input type="file" id="imgf" accept="image/*" hidden>
+<div id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const SP=[1,1.25,1.5,2,.75], TM=[0,15,30,60];
+const I={
+ plus:'<path d="M12 5.5v13M5.5 12h13"/>',
+ play:'<path d="M7.5 5.6v12.8a1 1 0 0 0 1.5.86l10.2-6.4a1 1 0 0 0 0-1.72L9 4.74a1 1 0 0 0-1.5.86z"/>',
+ pause:'<rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/>',
+ prev:'<path d="M6 5.5v13"/><path d="M18 6.3v11.4a.8.8 0 0 1-1.25.66l-8.2-5.7a.8.8 0 0 1 0-1.32l8.2-5.7A.8.8 0 0 1 18 6.3z"/>',
+ next:'<path d="M18 5.5v13"/><path d="M6 6.3v11.4a.8.8 0 0 0 1.25.66l8.2-5.7a.8.8 0 0 0 0-1.32l-8.2-5.7A.8.8 0 0 0 6 6.3z"/>',
+ shuffle:'<path d="M4 7h2.5c4.5 0 5.6 10 10 10H20"/><path d="M4 17h2.5c1.5 0 2.4-1.5 3.2-3.2M14.3 10.2C15.1 8.5 16 7 17.5 7H20"/><path d="m17.5 4.5 2.5 2.5-2.5 2.5M17.5 14.5l2.5 2.5-2.5 2.5"/>',
+ repeat:'<path d="M4 11.5V10a3 3 0 0 1 3-3h11.5"/><path d="m15.5 4 3 3-3 3"/><path d="M20 12.5V14a3 3 0 0 1-3 3H5.5"/><path d="m8.5 20-3-3 3-3"/>',
+ repeat1:'<path d="M4 11.5V10a3 3 0 0 1 3-3h11.5"/><path d="m15.5 4 3 3-3 3"/><path d="M20 12.5V14a3 3 0 0 1-3 3H5.5"/><path d="m8.5 20-3-3 3-3"/><path d="m11.4 10.2 1.3-.8v5.6"/>',
+ image:'<rect x="3.5" y="4.5" width="17" height="15" rx="4"/><circle cx="9" cy="10" r="1.7"/><path d="m5 17 4.5-4.5a1.2 1.2 0 0 1 1.7 0L17 17"/>',
+ music:'<path d="M9.5 17.5V6.2l9.5-2v11.3"/><circle cx="6.8" cy="17.5" r="2.7"/><circle cx="16.3" cy="15.3" r="2.7"/>',
+ heart:'<path d="M12 19.2s-7.2-4.3-7.2-9.6A3.9 3.9 0 0 1 12 7.2a3.9 3.9 0 0 1 7.2 2.4c0 5.3-7.2 9.6-7.2 9.6z"/>',
+ timer:'<circle cx="12" cy="13.5" r="7"/><path d="M12 10v3.7l2.2 1.3M9.5 3.5h5"/>',
+ list:'<path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/>',
+ x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+ down:'<path d="m6 9 6 6 6-6"/>',
+ trash:'<path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2h9.2l.9-12.2"/>'
+};
+const ic=(n,c='ic')=>`<svg class="${c}" viewBox="0 0 24 24">${I[n]}</svg>`;
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const fmt=s=>isFinite(s)&&s>0?`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`:'0:00';
+const plural=n=>{const d=n%10,h=n%100;return d===1&&h!==11?'трек':(d>1&&d<5&&(h<12||h>14))?'трека':'треков'};
+const fill=el=>el.style.setProperty('--p',(el.value-el.min)/(el.max-el.min)*100+'%');
+const g=$('#viz').getContext('2d');
+
+let st={};
+try{st=JSON.parse(localStorage.getItem('mplayer'))||{}}catch(e){}
+const save=()=>{try{localStorage.setItem('mplayer',JSON.stringify({rep,shf,spi,vol:Math.round(audio.volume*100)}))}catch(e){}};
+
+const audio=new Audio();
+audio.preload='metadata';
+audio.volume=(st.vol??80)/100;
+let tracks=[],cur=-1,rep=st.rep||0,shf=!!st.shf,spi=st.spi||0,tmi=0,tmId=0,coverUrl='',sx=0,drag=false,actx=null,an=null,vizRaf=0;
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
+function toggleSheet(on){$('#sheet').classList.toggle('open',on);$('#dim').classList.toggle('on',on)}
+
+function render(){
+  const t=tracks[cur],n=tracks.length;
+  $('#count').textContent=n?`${n} ${plural(n)}`:'Пусто';
+  $('#title').textContent=t?t.name:'Выберите трек';
+  $('#artist').textContent=t?`Трек ${cur+1} из ${n}`:'Нажмите + и выберите музыку';
+  $('#cover').classList.toggle('empty',!t);
+  $('#cover').classList.toggle('img',!!coverUrl);
+  $('#bg').classList.toggle('on',!!coverUrl);
+  $('#play').innerHTML=ic(audio.paused?'play':'pause');
+  $('#play').setAttribute('aria-label',audio.paused?'Играть':'Пауза');
+  $('#rep').innerHTML=ic(rep===2?'repeat1':'repeat');
+  $('#rep').classList.toggle('on',rep>0);
+  $('#shf').classList.toggle('on',shf);
+  $('#spd').textContent=SP[spi]+'×';
+  $('#spd').classList.toggle('on',spi>0);
+  $('#tmr').innerHTML=ic('timer')+(TM[tmi]?` ${TM[tmi]} мин`:'');
+  $('#tmr').classList.toggle('on',TM[tmi]>0);
+  $('#fav').classList.toggle('on',!!(t&&t.fav));
+  renderList();
+}
+
+function renderList(){
+  $('#list').innerHTML=tracks.length
+    ?tracks.map((t,i)=>`<div class="it${i===cur?' cur':''}" data-k="${i}"><span class="n">${i===cur&&!audio.paused?'♪':i+1}</span><span class="nm">${esc(t.name)}</span>${t.fav?ic('heart','ic fv'):''}<button class="rm" aria-label="Удалить">${ic('x')}</button></div>`).join('')
+    :'<div class="hint">Список пуст.<br>Нажмите + вверху и выберите музыку с телефона.</div>';
+}
+
+function select(i){
+  if(i<0||i>=tracks.length)return;
+  cur=i;
+  audio.src=tracks[i].url;
+  mediaInfo();
+  playNow();
+}
+function playNow(){
+  if(cur<0){if(tracks.length)select(0);return}
+  setupAudio();
+  audio.playbackRate=SP[spi];
+  audio.play().catch(err=>{if(err.name!=='AbortError')toast('Не получилось включить трек')});
+  render();
+}
+const toggle=()=>audio.paused?playNow():audio.pause();
+function next(){
+  if(!tracks.length)return;
+  if(shf&&tracks.length>1){let n;do n=Math.floor(Math.random()*tracks.length);while(n===cur);return select(n)}
+  if(cur+1<tracks.length)return select(cur+1);
+  if(rep)return select(0);
+  audio.pause();audio.currentTime=0;render();
+}
+function prev(){
+  if(!tracks.length)return;
+  if(audio.currentTime>3){audio.currentTime=0;return}
+  select(cur>0?cur-1:(rep?tracks.length-1:0));
+}
+function removeAt(i){
+  const t=tracks[i];
+  if(i===cur){audio.pause();audio.removeAttribute('src');audio.load();cur=-1}
+  else if(i<cur)cur--;
+  tracks.splice(i,1);
+  URL.revokeObjectURL(t.url);
+  render();
+}
+
+/* --- audio events --- */
+audio.onplay=()=>{cancelAnimationFrame(vizRaf);drawViz();render();if(navigator.mediaSession)navigator.mediaSession.playbackState='playing'};
+audio.onpause=()=>{cancelAnimationFrame(vizRaf);drawViz();render();if(navigator.mediaSession)navigator.mediaSession.playbackState='paused'};
+audio.onended=()=>rep===2?(audio.currentTime=0,playNow()):next();
+audio.onerror=()=>{if(audio.getAttribute('src'))toast('Этот файл не открывается')};
+audio.ontimeupdate=()=>{
+  const d=audio.duration,s=$('#seek');
+  if(!drag){s.value=d?audio.currentTime/d*1000:0;fill(s)}
+  $('#cur').textContent=fmt(audio.currentTime);
+  $('#dur').textContent=fmt(d);
+};
+
+/* --- controls --- */
+const seek=$('#seek');
+seek.oninput=()=>{fill(seek);if(audio.duration)audio.currentTime=seek.value/1000*audio.duration};
+seek.onpointerdown=()=>drag=true;
+addEventListener('pointerup',()=>drag=false);
+
+const vol=$('#vol');
+vol.value=Math.round(audio.volume*100);fill(vol);
+vol.oninput=()=>{audio.volume=vol.value/100;fill(vol);save()};
+
+$('#play').onclick=toggle;
+$('#next').onclick=next;
+$('#prev').onclick=prev;
+$('#shf').onclick=()=>{shf=!shf;save();render()};
+$('#rep').onclick=()=>{rep=(rep+1)%3;save();render()};
+$('#spd').onclick=()=>{spi=(spi+1)%SP.length;audio.playbackRate=SP[spi];save();render()};
+$('#tmr').onclick=()=>{
+  tmi=(tmi+1)%TM.length;clearTimeout(tmId);
+  if(TM[tmi])tmId=setTimeout(()=>{audio.pause();tmi=0;render();toast('Таймер сна: музыка выключена')},TM[tmi]*6e4);
+  render();
+};
+$('#fav').onclick=()=>{const t=tracks[cur];if(t){t.fav=!t.fav;render()}};
+$('#add').onclick=()=>$('#file').click();
+$('#pic').onclick=()=>$('#imgf').click();
+$('#lst').onclick=()=>toggleSheet(true);
+$('#close').onclick=$('#dim').onclick=()=>toggleSheet(false);
+$('#clr').onclick=()=>{
+  if(!tracks.length||!confirm('Очистить весь плейлист?'))return;
+  audio.pause();audio.removeAttribute('src');audio.load();
+  tracks.forEach(t=>URL.revokeObjectURL(t.url));
+  tracks=[];cur=-1;render();
+};
+
+$('#list').onclick=e=>{
+  const it=e.target.closest('.it');if(!it)return;
+  const k=+it.dataset.k;
+  if(e.target.closest('.rm'))removeAt(k);
+  else{select(k);toggleSheet(false)}
+};
+
+/* --- files --- */
+$('#file').onchange=e=>{
+  const files=[...e.target.files];e.target.value='';
+  if(!files.length)return;
+  const first=tracks.length;
+  files.forEach(f=>tracks.push({name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f),fav:false}));
+  toast(`Добавлено: ${files.length}`);
+  if(cur<0)select(first);else render();
+};
+$('#imgf').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f)return;
+  if(coverUrl)URL.revokeObjectURL(coverUrl);
+  coverUrl=URL.createObjectURL(f);
+  const u=`url("${coverUrl}")`;
+  $('#cover').style.backgroundImage=u;
+  $('#bg').style.backgroundImage=u;
+  mediaInfo();render();
+};
+
+/* --- cover: tap = play/pause, swipe = prev/next --- */
+const cover=$('#cover');
+cover.addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+cover.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-sx;
+  if(tracks.length&&Math.abs(dx)>60)dx<0?next():prev();
+});
+cover.onclick=()=>tracks.length?toggle():$('#file').click();
+
+/* --- visualizer (equalizer bars on the cover) --- */
+function setupAudio(){
+  try{
+    if(!actx){
+      actx=new(window.AudioContext||window.webkitAudioContext)();
+      const src=actx.createMediaElementSource(audio);
+      an=actx.createAnalyser();an.fftSize=64;
+      src.connect(an);an.connect(actx.destination);
+    }
+    if(actx.state==='suspended')actx.resume();
+  }catch(e){}
+}
+function drawViz(){
+  const c=$('#viz'),dpr=devicePixelRatio||1;
+  const w=Math.round(c.clientWidth*dpr),h=Math.round(c.clientHeight*dpr);
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  const d=new Uint8Array(32);
+  if(an)an.getByteFrequencyData(d);
+  g.clearRect(0,0,w,h);
+  g.fillStyle='#fff';
+  const n=24,gap=4*dpr,bw=(w-gap*(n-1))/n;
+  for(let i=0;i<n;i++){
+    const v=(d[i+1]||0)/255;
+    const bh=Math.max(3*dpr,v*h*.9);
+    g.globalAlpha=.3+v*.7;
+    g.fillRect(i*(bw+gap),h-bh,bw,bh);
+  }
+  g.globalAlpha=1;
+  vizRaf=audio.paused?0:requestAnimationFrame(drawViz);
+}
+
+/* --- lock screen / notification controls --- */
+function mediaInfo(){
+  const ms=navigator.mediaSession,t=tracks[cur];
+  if(!ms||!t)return;
+  try{ms.metadata=new MediaMetadata({title:t.name,artist:'Мой плеер',album:'Мой плеер',artwork:coverUrl?[{src:coverUrl,sizes:'512x512'}]:[]})}catch(e){}
+}
+if(navigator.mediaSession){
+  const H={play:()=>playNow(),pause:()=>audio.pause(),previoustrack:prev,nexttrack:next,seekto:d=>{if(d.seekTime!=null)audio.currentTime=d.seekTime}};
+  for(const k in H){try{navigator.mediaSession.setActionHandler(k,H[k])}catch(e){}}
+}
+
+/* --- start --- */
+document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=ic(el.dataset.icon));
+render();
+</script>
+</body>
+</html>
