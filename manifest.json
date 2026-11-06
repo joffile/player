@@ -1,5 +1,6 @@
 {
   "name": "Мой плеер",
+  "description": "Музыкальный плеер для телефона",
   "short_name": "Плеер",
   "start_url": "./index.html",
   "scope": "./",
