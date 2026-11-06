@@ -24,14 +24,14 @@ button{font:inherit;color:inherit}
 .btn:active,.play:active,.chip:active{transform:scale(.92)}
 .btn.on,.chip.on{border-color:#fff}
 .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.cover{position:relative;width:min(82vw,44vh,360px);aspect-ratio:1;margin:14px auto 0;border-radius:30px;border:1px solid var(--line);background:#0c0c0c 50%/cover no-repeat;display:grid;place-items:center;overflow:hidden;cursor:pointer;flex:none}
+.cover{position:relative;flex:1;min-height:0;width:100%;margin:12px 0 0;border-radius:30px;border:1px solid var(--line);background:#0c0c0c 50%/cover no-repeat;display:grid;place-items:center;overflow:hidden;cursor:pointer}
 .cover.img .note{display:none}
 .cover.empty .note{opacity:.35}
-.note{width:96px;height:96px;color:#fff}
-.note .ic{width:96px;height:96px;stroke-width:1.2}
+.note{width:120px;height:120px;color:#fff}
+.note .ic{width:120px;height:120px;stroke-width:1.2}
 .cover canvas{position:absolute;left:0;bottom:0;width:100%;height:38%}
 .meta{text-align:center;margin-top:18px}
-.title{font-size:21px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title{font-size:24px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .artist{margin-top:4px;font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .seek{margin-top:16px}
 .times{display:flex;justify-content:space-between;margin-top:2px;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -41,9 +41,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:#2a2a2a}
 input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:#fff}
 input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
-.ctrl{display:flex;align-items:center;justify-content:space-between;margin:14px 0 18px}
-.play{width:80px;height:80px;display:grid;place-items:center;padding:0;border:0;border-radius:28px;background:#fff;color:#000;cursor:pointer;transition:transform .12s}
-.play .ic{width:30px;height:30px;fill:currentColor;stroke-width:1.6}
+.ctrl{display:flex;align-items:center;justify-content:space-between;margin:22px 0 26px}
+.ctrl .btn{width:52px;height:52px}
+.play{width:92px;height:92px;display:grid;place-items:center;padding:0;border:0;border-radius:32px;background:#fff;color:#000;cursor:pointer;transition:transform .12s}
+.play .ic{width:34px;height:34px;fill:currentColor;stroke-width:1.6}
 .row2{display:flex;align-items:center;gap:10px}
 .chip{height:44px;min-width:44px;padding:0 12px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:16px;border:1px solid var(--line);background:var(--card);font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums;transition:transform .12s,border-color .2s}
 .chip .ic{width:18px;height:18px}
@@ -355,6 +356,7 @@ if(navigator.mediaSession){
 /* --- start --- */
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=ic(el.dataset.icon));
 render();
-</script><script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
 </body>
 </html>
